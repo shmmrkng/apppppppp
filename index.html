@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>爽快アクションゲーム</title>
+<style>
+
+body{
+margin:0;
+overflow:hidden;
+background:linear-gradient(#0f2027,#203a43,#2c5364);
+color:white;
+font-family:sans-serif;
+}
+
+#ui{
+position:fixed;
+top:10px;
+left:10px;
+font-size:20px;
+}
+
+canvas{
+display:block;
+}
+
+#start{
+position:absolute;
+width:100%;
+height:100%;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+background:rgba(0,0,0,0.6);
+}
+
+button{
+padding:12px 24px;
+font-size:18px;
+border:none;
+border-radius:10px;
+cursor:pointer;
+}
+
+</style>
+</head>
+<body>
+
+<div id="ui">Score: <span id="score">0</span></div>
+
+<div id="start">
+<h1>爽快シューティング</h1>
+<p>移動：← →　攻撃：スペース</p>
+<button onclick="startGame()">START</button>
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+
+const canvas = document.getElementById("game")
+const ctx = canvas.getContext("2d")
+
+canvas.width = window.innerWidth
+canvas.height = window.innerHeight
+
+let player
+let bullets = []
+let enemies = []
+let score = 0
+let keys = {}
+let running = false
+
+class Player{
+constructor(){
+this.x = canvas.width/2
+this.y = canvas.height-80
+this.size = 25
+this.speed = 7
+}
+
+draw(){
+ctx.fillStyle="cyan"
+ctx.beginPath()
+ctx.arc(this.x,this.y,this.size,0,Math.PI*2)
+ctx.fill()
+}
+
+update(){
+if(keys["ArrowLeft"]) this.x -= this.speed
+if(keys["ArrowRight"]) this.x += this.speed
+
+this.x = Math.max(this.size,Math.min(canvas.width-this.size,this.x))
+
+this.draw()
+}
+}
+
+class Bullet{
+constructor(x,y){
+this.x=x
+this.y=y
+this.speed=10
+this.size=5
+}
+
+update(){
+this.y -= this.speed
+ctx.fillStyle="yellow"
+ctx.fillRect(this.x,this.y,this.size,this.size)
+}
+}
+
+class Enemy{
+constructor(){
+this.x=Math.random()*canvas.width
+this.y=-20
+this.size=20
+this.speed=2+Math.random()*2
+}
+
+update(){
+this.y+=this.speed
+ctx.fillStyle="red"
+ctx.beginPath()
+ctx.arc(this.x,this.y,this.size,0,Math.PI*2)
+ctx.fill()
+}
+}
+
+function collision(a,b){
+const dx=a.x-b.x
+const dy=a.y-b.y
+return Math.sqrt(dx*dx+dy*dy) < a.size + b.size
+}
+
+function spawnEnemy(){
+if(Math.random()<0.03){
+enemies.push(new Enemy())
+}
+}
+
+function loop(){
+
+if(!running) return
+
+ctx.clearRect(0,0,canvas.width,canvas.height)
+
+player.update()
+
+spawnEnemy()
+
+for(let i=bullets.length-1;i>=0;i--){
+let b=bullets[i]
+b.update()
+
+if(b.y<0) bullets.splice(i,1)
+}
+
+for(let i=enemies.length-1;i>=0;i--){
+let e=enemies[i]
+e.update()
+
+if(collision(player,e)){
+alert("Game Over! Score:"+score)
+location.reload()
+}
+
+for(let j=bullets.length-1;j>=0;j--){
+let b=bullets[j]
+
+const dx=b.x-e.x
+const dy=b.y-e.y
+
+if(Math.sqrt(dx*dx+dy*dy)<e.size){
+score++
+document.getElementById("score").textContent=score
+
+enemies.splice(i,1)
+bullets.splice(j,1)
+break
+}
+}
+
+if(e.y>canvas.height) enemies.splice(i,1)
+}
+
+requestAnimationFrame(loop)
+
+}
+
+function startGame(){
+
+player = new Player()
+bullets=[]
+enemies=[]
+score=0
+
+document.getElementById("score").textContent=0
+document.getElementById("start").style.display="none"
+
+running=true
+
+loop()
+
+}
+
+window.addEventListener("keydown",e=>{
+
+keys[e.code]=true
+
+if(e.code==="Space"){
+bullets.push(new Bullet(player.x,player.y))
+}
+
+})
+
+window.addEventListener("keyup",e=>{
+keys[e.code]=false
+})
+
+</script>
+
+</body>
+</html>in
